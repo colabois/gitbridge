@@ -21,7 +21,7 @@ NC='\033[0m'
 
 
 edebug () {
-    einfo $@
+    echo -e " ${Blue}*${NC} ${@:1}${NC}"
 }
 
 
@@ -42,11 +42,30 @@ eerror () {
 
 die () {
     echo
-    eerror die called, ending.
+    edebug die called, ending.
     exit 1
 }
 
 
 end () {
     exit 0
+}
+
+contains () {
+    INPUT=$1
+    shift
+    while true
+        do
+        if [ "$1" == "$INPUT" ]
+            then
+            echo true
+            break
+        fi
+        if [ -z "$1" ]
+            then
+            echo false
+            break
+        fi
+        shift
+    done
 }

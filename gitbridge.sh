@@ -2,34 +2,30 @@
 
 source utils.sh
 
-#!/usr/bin/env bash
-
-source utils.sh
-
 
 SCRIPT_NAME=$0
 REAL_ARGS=$@
 
 
-show_help () {
-    echo -e "USAGE : ${Light_Green}${SCRIPT_NAME}${NC} ${Yellow}[options]${NC} ${Green}<action>${NC} ${Light_Red}</path/to/target>${NC} "
+show_general_help () {
+    echo -e "USAGE : ${Light_Green}${SCRIPT_NAME}${NC} ${Yellow}[gloabl options]${NC} ${Green}<action>${NC} ${Light_Red}...${NC} "
     echo -e 
     echo -e "${Green}ACTIONS :${NC}"
-    echo -e " install                                   Installs GitBridge on the system."
+    echo -e " install                                   Install GitBridge on the system."
     echo -e " list                                      List keys for the current user."
     echo -e " add                                       Add a new key for the current user."
     echo -e " remove                                    Remove an existing key for the current user."
-    echo -e "                                           Useful when building an embeded system. (compilation happens on host's root)"
-    echo -e "${Yellow}OPTIONS :${NC}"
-    echo -e " -h        --help                          Show this help."
-    echo -e " -u        --userland,--no-root            Allow the script to run in userland."
-    echo -e " -f        --force                         Run even if something fails."
     echo -e
-    echo -e "${Light_Red}TARGET :${NC}"
-    echo -e " </path/to/target>                         Path to the future chroot installation,"
-    echo -e "                                           can be . to install in the current directory"
+    echo -e "${Yellow}GLOBAL OPTIONS :${NC}"
+    echo -e " -h        --help                          Show this help."
+    echo -e "                                           Shows the ${Green}action specific help${NC} if an action is specified."
+#    echo -e " -u        --userland,--no-root            Allow the script to run in userland."
+    echo -e " -f        --force                         Run even if something fails."
 }
 
+show_install_help() {
+    echo -e
+}
 
 getopt --test
 if [ $? != 4 ]; then
@@ -38,14 +34,10 @@ if [ $? != 4 ]; then
 fi
 
 
-
-
 echo -e ${Light_Blue}  -- GitBridge Managing tool -- ${NC}
 echo
 
-SHORT="hup:f"
-LONG="help,userland,no-root,profile:,force"
-SHORT="h"
+SHORT="huf"
 LONG="help,userland,no-root,force"
 
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
@@ -58,39 +50,58 @@ fi
 eval set -- "$OPTS"
 
 #Setting default values
+
+ACTIONS="install list add remove"
+
+#GLOBAL VARS
+
+MODE="global"
 NO_ROOT=false
 SHOW_HELP=false
 FORCE=false
-TARGET=""
 ACTION=""
 #Extracting arguments
 while true
-    do case "$1" in
-        -h | --help )
-            SHOW_HELP=true
+    do
+    case "$ACTION" in
+        "" )
+            case "$1" in
+                -h | --help )
+                    SHOW_HELP=true
+                    shift
+                    ;;
+                -u | --userland | --no-root )
+                    NO_ROOT=true
+                    shift
+                    ;;
+                -f | --force )
+                    FORCE=true
+                    shift
+                    ;;
+                -- )
+                    shift
+                    ;;
+                *)
+                    if [ -z ${ACTION} ]
+                        then ACTION=$1
+                        if ! $(contains $ACTION $ACTIONS)
+                            then
+                            eerror $ACTION is not a valid action.
+                            eerror See $SCRIPT_NAME --help for more info.
+                            die
+                        fi
+                    fi
+                    shift
+                    ;;
+            esac
+            ;;
+
+        install )
+            case in
+                "test" )
             shift
             ;;
-        -u | --userland | --no-root )
-            NO_ROOT=true
-            shift
-            ;;
-        -f | --force )
-            FORCE=true
-            shift
-            ;;
-        -- )
-            shift
-            ;;
-        *)
-            if ! [ -z ${ACTION} ]
-                then TARGET=$1
-                break
-            fi
-            if [ -z ${ACTION} ]
-                then ACTION=$1
-            fi
-            shift
-            ;;
+        
     esac
     if [ -z "$1" ]
         then
@@ -98,9 +109,10 @@ while true
     fi
 done
 
+
 if $SHOW_HELP
     then
-    show_help
+    show_general_help
     end
 fi
 
