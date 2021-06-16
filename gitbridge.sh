@@ -10,21 +10,31 @@ REAL_ARGS=$@
 show_general_help () {
     echo -e "USAGE : ${Light_Green}${SCRIPT_NAME}${NC} ${Yellow}[gloabl options]${NC} ${Green}<action>${NC} ${Light_Red}...${NC} "
     echo -e 
-    echo -e "${Green}ACTIONS :${NC}"
+    echo -e "${Green}ACTIONS:${NC}"
     echo -e " install                                   Install GitBridge on the system."
     echo -e " list                                      List keys for the current user."
     echo -e " add                                       Add a new key for the current user."
     echo -e " remove                                    Remove an existing key for the current user."
     echo -e
-    echo -e "${Yellow}GLOBAL OPTIONS :${NC}"
+    echo -e "${Yellow}GLOBAL OPTIONS:${NC}"
     echo -e " -h        --help                          Show this help."
     echo -e "                                           Shows the ${Green}action specific help${NC} if an action is specified."
-#    echo -e " -u        --userland,--no-root            Allow the script to run in userland."
+    echo -e " -u        --userland,--no-root            Allow the script to run in userland. ${Light_Red}Untested!${NC}"
     echo -e " -f        --force                         Run even if something fails."
+    echo -e " --target </path/to/target>                Path to the gitbridge installation (/srv/gitbridge by default)"
+    echo -e "                                           can be . for the current directory"
 }
 
 show_install_help() {
+    echo -e "USAGE : ${Light_Green}${SCRIPT_NAME}${NC} ${Yellow}[global options]${NC} ${Green}install${NC} ${Light_Red}[install options]${NC}"
     echo -e
+    echo -e "${Light_Red}INSTALL OPTIONS:${NC}"
+    echo -e
+    echo -e "${Yellow}GLOBAL:${NC}"
+    echo -e " run ${Light_Green}${SCRIPT_NAME}${NC} --help for global help."
+    echo -e " --target </path/to/target>                Path to the gitbridge installation (/srv/gitbridge by default)"
+    echo -e "                                           can be . for the current directory"
+    
 }
 
 getopt --test
@@ -38,7 +48,7 @@ echo -e ${Light_Blue}  -- GitBridge Managing tool -- ${NC}
 echo
 
 SHORT="huf"
-LONG="help,userland,no-root,force"
+LONG="help,userland,no-root,force,target:"
 
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
 if [ $? != 0 ]
@@ -61,6 +71,7 @@ SHOW_HELP=false
 FORCE=false
 ACTION=""
 #Extracting arguments
+edebug $@
 while true
     do
     case "$ACTION" in
@@ -77,6 +88,10 @@ while true
                 -f | --force )
                     FORCE=true
                     shift
+                    ;;
+                --target )
+                    TARGET=$2
+                    shift 2
                     ;;
                 -- )
                     shift
@@ -97,8 +112,10 @@ while true
             ;;
 
         install )
-            case in
-                "test" )
+            case "$1" in
+                -h | --help )
+                    SHOW_HELP=true
+            esac
             shift
             ;;
         
@@ -112,7 +129,12 @@ done
 
 if $SHOW_HELP
     then
-    show_general_help
+    if [ "${ACTION}" == "install" ]
+        then
+        show_install_help
+    else
+        show_general_help
+    fi
     end
 fi
 
@@ -123,9 +145,9 @@ if [ -z ${ACTION} ]
 fi
 
 if [ -z ${TARGET} ]
-    then eerror Please specify a target.
-    ewarn Run ${SCRIPT_NAME} --help for more info.
-    die
+    then
+    edebug Using default target
+    TARGET=/srv/git
 fi
 if ! ${NO_ROOT}
     then
@@ -147,16 +169,7 @@ if ${FORCE}
     }
 fi
 
-if [ "${ACTION}" == "shell" ]
+if [ "${ACTION}" == "install" ]
     then
-    cd ${TARGET} || die
-    TARGET=$(pwd)
-    export ROOT=${TARGET}
-    export PORTAGE_CONFIGROOT=${TARGET}
-    export PORTDIR=${TARGET}/usr/portage
-    einfo You are entering a new shell.
-    einfo When you have finished please run exit to end the program.
-    cd ${TARGET}
-    bash
-    einfo You have left the shell.
+    einfo Installing gitbridge in $TARGET
 fi
